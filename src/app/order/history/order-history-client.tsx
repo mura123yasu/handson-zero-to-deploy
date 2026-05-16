@@ -36,6 +36,7 @@ export default function OrderHistoryClient() {
   const [error, setError] = useState<string | null>(null);
   const [numPeople, setNumPeople] = useState(1);
   const [reorderQuantities, setReorderQuantities] = useState<Record<string, number>>({});
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [submittingItem, setSubmittingItem] = useState<string | null>(null);
   const [reorderResult, setReorderResult] = useState<{
     type: "success" | "error";
@@ -98,7 +99,7 @@ export default function OrderHistoryClient() {
 
   const handleReorderItem = async (orderId: number, item: OrderItem) => {
     const key = getReorderKey(orderId, item.menuItemId);
-    const qty = reorderQuantities[key] ?? item.quantity;
+    const qty = reorderQuantities[key] ?? 1;
     setSubmittingItem(key);
     setReorderResult(null);
     try {
@@ -126,6 +127,7 @@ export default function OrderHistoryClient() {
       setTimeout(() => setReorderResult(null), 3000);
     } finally {
       setSubmittingItem(null);
+      setExpandedItem(null);
     }
   };
 
@@ -250,7 +252,8 @@ export default function OrderHistoryClient() {
                     <div className="divide-y">
                       {order.items.map((item, idx) => {
                         const key = getReorderKey(order.id, item.menuItemId);
-                        const qty = getReorderQty(order.id, item.menuItemId, item.quantity);
+                        const qty = getReorderQty(order.id, item.menuItemId, 1);
+                        const isExpanded = expandedItem === key;
                         const isSubmitting = submittingItem === key;
                         return (
                           <div
@@ -266,40 +269,64 @@ export default function OrderHistoryClient() {
                                   ×{item.quantity}
                                 </span>
                               </div>
-                              <span className="text-sm font-semibold text-orange-600">
-                                ¥{(item.price * item.quantity).toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-end gap-2">
-                              <div className="flex items-center gap-1">
-                                <button
-                                  className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200"
-                                  onClick={() =>
-                                    setReorderQty(order.id, item.menuItemId, qty - 1)
-                                  }
-                                >
-                                  −
-                                </button>
-                                <span className="w-6 text-center text-sm font-bold">
-                                  {qty}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-orange-600">
+                                  ¥{(item.price * item.quantity).toLocaleString()}
                                 </span>
+                                {!isExpanded && (
+                                  <button
+                                    onClick={() => {
+                                      setExpandedItem(key);
+                                      setReorderQty(order.id, item.menuItemId, 1);
+                                    }}
+                                    className="rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow-md"
+                                  >
+                                    🔄 おかわり
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {isExpanded && (
+                              <div className="mt-2 flex items-center justify-end gap-2 rounded-xl bg-orange-50 px-3 py-2">
+                                <span className="mr-auto text-xs font-medium text-orange-700">
+                                  数量
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200"
+                                    onClick={() =>
+                                      setReorderQty(order.id, item.menuItemId, qty - 1)
+                                    }
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-6 text-center text-sm font-bold">
+                                    {qty}
+                                  </span>
+                                  <button
+                                    className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200"
+                                    onClick={() =>
+                                      setReorderQty(order.id, item.menuItemId, qty + 1)
+                                    }
+                                  >
+                                    +
+                                  </button>
+                                </div>
                                 <button
-                                  className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200"
-                                  onClick={() =>
-                                    setReorderQty(order.id, item.menuItemId, qty + 1)
-                                  }
+                                  onClick={() => handleReorderItem(order.id, item)}
+                                  disabled={isSubmitting}
+                                  className="rounded-full bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow-md disabled:bg-gray-300"
                                 >
-                                  +
+                                  {isSubmitting ? "注文中..." : "注文する"}
+                                </button>
+                                <button
+                                  onClick={() => setExpandedItem(null)}
+                                  className="rounded-full bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-300"
+                                >
+                                  ✕
                                 </button>
                               </div>
-                              <button
-                                onClick={() => handleReorderItem(order.id, item)}
-                                disabled={isSubmitting}
-                                className="rounded-full bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow-md disabled:bg-gray-300"
-                              >
-                                {isSubmitting ? "注文中..." : "🔄 おかわり"}
-                              </button>
-                            </div>
+                            )}
                           </div>
                         );
                       })}
