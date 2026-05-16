@@ -33,7 +33,7 @@ export const menuItems: MenuItem[] = [
     category: "メイン",
     description: "新鮮な刺身をふんだんに盛り付けた海鮮丼。味噌汁付き。",
     imageUrl: "🐟",
-    inStock: true,
+    inStock: false,
   },
   {
     id: 3,
@@ -87,7 +87,7 @@ export const menuItems: MenuItem[] = [
     category: "デザート",
     description: "もちもち食感の手作りわらび餅。黒蜜ときな粉添え。",
     imageUrl: "🍡",
-    inStock: true,
+    inStock: false,
   },
   {
     id: 9,
