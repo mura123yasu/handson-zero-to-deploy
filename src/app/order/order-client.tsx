@@ -29,6 +29,53 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
   const [showCart, setShowCart] = useState(false);
   const [numPeople, setNumPeople] = useState(1);
   const [outOfStockError, setOutOfStockError] = useState<string | null>(null);
+  const [seatNumber, setSeatNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderResult, setOrderResult] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const submitOrder = async () => {
+    if (cart.length === 0) return;
+    setIsSubmitting(true);
+    setOrderResult(null);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.map((c) => ({
+            menuItemId: c.item.id,
+            quantity: c.quantity,
+          })),
+          seatNumber: seatNumber || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOrderResult({
+          type: "success",
+          message: `注文を受け付けました（注文番号: ${data.orderId}）`,
+        });
+        setCart([]);
+        setShowCart(false);
+        setTimeout(() => setOrderResult(null), 5000);
+      } else {
+        setOrderResult({
+          type: "error",
+          message: data.message || "注文に失敗しました",
+        });
+      }
+    } catch {
+      setOrderResult({
+        type: "error",
+        message: "通信エラーが発生しました",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const addToCart = (menuItem: MenuItem) => {
     if (!menuItem.inStock) {
@@ -288,6 +335,18 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
                     <span>¥{totalAmount.toLocaleString()}</span>
                   </div>
 
+                  {/* 座席番号 */}
+                  <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
+                    <span className="shrink-0 text-sm font-medium">座席番号</span>
+                    <Input
+                      type="text"
+                      placeholder="例: A1"
+                      value={seatNumber}
+                      onChange={(e) => setSeatNumber(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+
                   {/* 割り勘 */}
                   <div className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
                     <div className="flex items-center gap-2">
@@ -314,10 +373,33 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
                       </p>
                     </div>
                   </div>
+
+                  {/* 注文確定ボタン */}
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={submitOrder}
+                    disabled={isSubmitting || cart.length === 0}
+                  >
+                    {isSubmitting ? "送信中..." : "注文を確定する"}
+                  </Button>
                 </div>
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 注文結果メッセージ */}
+      {orderResult && (
+        <div
+          className={`fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow-lg ${
+            orderResult.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-destructive text-destructive-foreground"
+          }`}
+        >
+          {orderResult.message}
         </div>
       )}
     </div>
