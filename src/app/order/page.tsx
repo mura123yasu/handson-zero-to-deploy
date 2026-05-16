@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { menuItems, categories } from "@/data/menu";
 import type { MenuItem } from "@/data/menu";
 
@@ -22,8 +23,15 @@ export default function OrderPage() {
   const [selectedCategory, setSelectedCategory] = useState("すべて");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [numPeople, setNumPeople] = useState(1);
+  const [outOfStockError, setOutOfStockError] = useState<string | null>(null);
 
   const addToCart = (menuItem: MenuItem) => {
+    if (!menuItem.inStock) {
+      setOutOfStockError(`「${menuItem.name}」は品切れです`);
+      setTimeout(() => setOutOfStockError(null), 3000);
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((c) => c.item.id === menuItem.id);
       if (existing) {
@@ -59,6 +67,9 @@ export default function OrderPage() {
   );
 
   const totalQuantity = cart.reduce((sum, c) => sum + c.quantity, 0);
+
+  const perPersonAmount =
+    numPeople > 0 ? Math.ceil(totalAmount / numPeople) : totalAmount;
 
   const filteredItems =
     selectedCategory === "すべて"
@@ -105,7 +116,10 @@ export default function OrderPage() {
         </h2>
         <div className="flex flex-col gap-4">
           {filteredItems.map((item) => (
-            <Card key={item.id}>
+            <Card
+              key={item.id}
+              className={!item.inStock ? "opacity-60" : ""}
+            >
               <CardHeader>
                 <div className="flex items-start gap-3">
                   {/* 料理画像プレースホルダー */}
@@ -117,9 +131,16 @@ export default function OrderPage() {
                       <CardTitle className="leading-snug">
                         {item.name}
                       </CardTitle>
-                      <Badge variant="secondary" className="shrink-0">
-                        {item.category}
-                      </Badge>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {!item.inStock && (
+                          <Badge variant="destructive" className="shrink-0">
+                            品切れ
+                          </Badge>
+                        )}
+                        <Badge variant="secondary" className="shrink-0">
+                          {item.category}
+                        </Badge>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {item.description}
@@ -137,8 +158,9 @@ export default function OrderPage() {
                   className="w-full"
                   size="lg"
                   onClick={() => addToCart(item)}
+                  disabled={!item.inStock}
                 >
-                  カートに追加
+                  {item.inStock ? "カートに追加" : "品切れ"}
                 </Button>
               </CardFooter>
             </Card>
@@ -150,6 +172,13 @@ export default function OrderPage() {
           )}
         </div>
       </main>
+
+      {/* 品切れエラーメッセージ */}
+      {outOfStockError && (
+        <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-lg bg-destructive px-4 py-2 text-sm text-destructive-foreground shadow-lg">
+          {outOfStockError}
+        </div>
+      )}
 
       {/* 注文リストを見るボタン（フッター固定） */}
       <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -249,10 +278,37 @@ export default function OrderPage() {
                   ))}
                 </div>
 
-                <div className="mt-4 border-t pt-4">
+                <div className="mt-4 space-y-3 border-t pt-4">
                   <div className="flex items-center justify-between text-lg font-bold">
                     <span>合計</span>
                     <span>¥{totalAmount.toLocaleString()}</span>
+                  </div>
+
+                  {/* 割り勘 */}
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">割り勘</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={numPeople}
+                        onChange={(e) =>
+                          setNumPeople(
+                            Math.max(1, parseInt(e.target.value) || 1)
+                          )
+                        }
+                        className="h-8 w-16 text-center"
+                      />
+                      <span className="text-sm text-muted-foreground">人</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">
+                        1人あたり
+                      </p>
+                      <p className="text-base font-bold">
+                        ¥{perPersonAmount.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </>
