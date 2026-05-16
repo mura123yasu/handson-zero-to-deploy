@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +54,7 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 export default function AdminOrdersClient({
   initialOrders,
 }: AdminOrdersClientProps) {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -61,6 +64,12 @@ export default function AdminOrdersClient({
     orders: Order[];
     total: number;
   } | null>(null);
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+    router.push("/admin/login");
+    router.refresh();
+  };
 
   const updateStatus = async (orderId: number, newStatus: string) => {
     setUpdatingId(orderId);
@@ -146,9 +155,14 @@ export default function AdminOrdersClient({
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
           <h1 className="text-lg font-bold tracking-tight">注文管理</h1>
-          <Button variant="outline" size="sm" onClick={refreshOrders}>
-            更新
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={refreshOrders}>
+              更新
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              ログアウト
+            </Button>
+          </div>
         </div>
       </header>
 
