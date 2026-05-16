@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(gh pr create *)",
+      "Bash(gh repo edit *)",
+      "Bash(gh issue create *)",
+      "Bash(vercel link *)",
+      "Bash(vercel --yes)",
+      "Bash(vercel project ls)",
+      "Bash(vercel inspect *)",
+      "Bash(vercel logs *)"
+    ]
+  }
+}
