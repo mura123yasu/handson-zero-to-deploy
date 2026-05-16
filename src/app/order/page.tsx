@@ -10,100 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-type MenuItem = {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-  description: string;
-  image: string;
-};
-
-const categories = ["すべて", "メイン", "サイド", "デザート", "ドリンク"];
-
-const menuItems: MenuItem[] = [
-  {
-    id: 1,
-    name: "特製ハンバーグ定食",
-    price: 1280,
-    category: "メイン",
-    description: "自家製デミグラスソースの特製ハンバーグ。ライス・味噌汁付き。",
-    image: "🍽️",
-  },
-  {
-    id: 2,
-    name: "海鮮丼",
-    price: 1480,
-    category: "メイン",
-    description: "新鮮な刺身をふんだんに盛り付けた海鮮丼。味噌汁付き。",
-    image: "🐟",
-  },
-  {
-    id: 3,
-    name: "から揚げ定食",
-    price: 980,
-    category: "メイン",
-    description: "カリッとジューシーな鶏のから揚げ。ライス・味噌汁付き。",
-    image: "🍗",
-  },
-  {
-    id: 4,
-    name: "季節のサラダ",
-    price: 580,
-    category: "サイド",
-    description: "旬の野菜を使った彩り豊かなサラダ。",
-    image: "🥗",
-  },
-  {
-    id: 5,
-    name: "味噌汁（単品）",
-    price: 200,
-    category: "サイド",
-    description: "出汁にこだわった自家製味噌汁。",
-    image: "🍜",
-  },
-  {
-    id: 6,
-    name: "枝豆",
-    price: 350,
-    category: "サイド",
-    description: "塩茹でした旬の枝豆。おつまみにも最適。",
-    image: "🫛",
-  },
-  {
-    id: 7,
-    name: "抹茶アイス",
-    price: 400,
-    category: "デザート",
-    description: "濃厚な宇治抹茶を使用したアイスクリーム。",
-    image: "🍨",
-  },
-  {
-    id: 8,
-    name: "わらび餅",
-    price: 450,
-    category: "デザート",
-    description: "もちもち食感の手作りわらび餅。黒蜜ときな粉添え。",
-    image: "🍡",
-  },
-  {
-    id: 9,
-    name: "緑茶",
-    price: 250,
-    category: "ドリンク",
-    description: "香り高い静岡産の煎茶。",
-    image: "🍵",
-  },
-  {
-    id: 10,
-    name: "生ビール",
-    price: 550,
-    category: "ドリンク",
-    description: "キンキンに冷えた生ビール（中ジョッキ）。",
-    image: "🍺",
-  },
-];
+import { menuItems, categories } from "@/data/menu";
 
 export default function OrderPage() {
   const [selectedCategory, setSelectedCategory] = useState("すべて");
@@ -158,7 +65,7 @@ export default function OrderPage() {
                 <div className="flex items-start gap-3">
                   {/* 料理画像プレースホルダー */}
                   <div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted text-2xl">
-                    {item.image}
+                    {item.imageUrl}
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex items-start justify-between gap-2">
