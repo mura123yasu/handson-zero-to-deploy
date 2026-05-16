@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,6 +17,7 @@ type CartItem = {
 
 type OrderClientProps = {
   menuItems: MenuItem[];
+  initialCart?: CartItem[];
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -29,21 +32,30 @@ function isImageUrl(url: string) {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
-export default function OrderClient({ menuItems }: OrderClientProps) {
+export default function OrderClient({ menuItems, initialCart }: OrderClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const seatNumber = searchParams.get("seat") ?? "";
+
+  const [seatInput, setSeatInput] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("すべて");
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [showCart, setShowCart] = useState(false);
-  const [numPeople, setNumPeople] = useState(1);
+  const [cart, setCart] = useState<CartItem[]>(initialCart ?? []);
+  const [showCart, setShowCart] = useState(initialCart && initialCart.length > 0 ? true : false);
   const [outOfStockError, setOutOfStockError] = useState<string | null>(null);
-  const [seatNumber, setSeatNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
+  const handleSeatSubmit = () => {
+    const trimmed = seatInput.trim();
+    if (!trimmed) return;
+    router.replace(`/order?seat=${encodeURIComponent(trimmed)}`);
+  };
+
   const submitOrder = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !seatNumber) return;
     setIsSubmitting(true);
     setOrderResult(null);
     try {
@@ -55,7 +67,7 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
             menuItemId: c.item.id,
             quantity: c.quantity,
           })),
-          seatNumber: seatNumber || undefined,
+          seatNumber,
         }),
       });
       const data = await res.json();
@@ -125,24 +137,77 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
 
   const totalQuantity = cart.reduce((sum, c) => sum + c.quantity, 0);
 
-  const perPersonAmount =
-    numPeople > 0 ? Math.ceil(totalAmount / numPeople) : totalAmount;
-
   const filteredItems =
     selectedCategory === "すべて"
       ? menuItems
       : menuItems.filter((item) => item.category === selectedCategory);
 
+  // 座席未選択時は座席選択画面を表示
+  if (!seatNumber) {
+    return (
+      <div className="flex min-h-full flex-col bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-24">
+          <div className="w-full max-w-sm">
+            <div className="mb-8 text-center">
+              <span className="text-6xl">🪑</span>
+              <h1 className="mt-4 text-3xl font-extrabold text-white drop-shadow-md">
+                座席を選択
+              </h1>
+              <p className="mt-2 text-base text-white/80">
+                座席番号を入力してメニューを開きましょう
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-1" />
+              <div className="p-6">
+                <label className="mb-2 block text-sm font-bold text-gray-700">
+                  🪑 座席番号
+                </label>
+                <Input
+                  type="text"
+                  placeholder="例: A1, B3, C5"
+                  value={seatInput}
+                  onChange={(e) => setSeatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSeatSubmit()}
+                  className="mb-4 h-14 rounded-xl border-orange-200 text-center text-2xl font-bold focus:border-orange-400 focus:ring-orange-400"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSeatSubmit}
+                  disabled={!seatInput.trim()}
+                  className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none"
+                >
+                  メニューを開く 🍽️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-full flex-col bg-gradient-to-b from-orange-50 via-background to-background">
       {/* ヘッダー */}
       <header className="sticky top-0 z-20 bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg">
-        <div className="mx-auto flex h-16 max-w-2xl items-center justify-center px-4">
+        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">🍔</span>
             <h1 className="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">
               OSAKI 亭
             </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-white/20 px-3 py-1 text-sm font-semibold text-white">
+              🪑 {seatNumber}
+            </span>
+            <Link
+              href={`/order/history?seat=${encodeURIComponent(seatNumber)}`}
+              className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/30"
+            >
+              📋 履歴
+            </Link>
           </div>
         </div>
       </header>
@@ -369,43 +434,12 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
                     </span>
                   </div>
 
-                  {/* 座席番号 */}
+                  {/* 座席番号表示 */}
                   <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-3">
                     <span className="shrink-0 text-sm font-bold">🪑 座席</span>
-                    <Input
-                      type="text"
-                      placeholder="例: A1"
-                      value={seatNumber}
-                      onChange={(e) => setSeatNumber(e.target.value)}
-                      className="h-9 rounded-lg border-amber-200 bg-white"
-                    />
-                  </div>
-
-                  {/* 割り勘 */}
-                  <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 p-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">👥 割り勘</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={numPeople}
-                        onChange={(e) =>
-                          setNumPeople(
-                            Math.max(1, parseInt(e.target.value) || 1)
-                          )
-                        }
-                        className="h-9 w-16 rounded-lg border-amber-200 bg-white text-center"
-                      />
-                      <span className="text-sm text-muted-foreground">人</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        1人あたり
-                      </p>
-                      <p className="text-lg font-extrabold text-orange-600">
-                        ¥{perPersonAmount.toLocaleString()}
-                      </p>
-                    </div>
+                    <span className="text-sm font-semibold text-amber-700">
+                      {seatNumber}
+                    </span>
                   </div>
 
                   {/* 注文確定ボタン */}
