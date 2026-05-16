@@ -1,14 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { MenuItem } from "@/lib/menu";
@@ -22,6 +16,18 @@ type CartItem = {
 type OrderClientProps = {
   menuItems: MenuItem[];
 };
+
+const CATEGORY_ICONS: Record<string, string> = {
+  "すべて": "🍽️",
+  "メイン": "🔥",
+  "サイド": "🥗",
+  "デザート": "🍰",
+  "ドリンク": "🥤",
+};
+
+function isImageUrl(url: string) {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
 
 export default function OrderClient({ menuItems }: OrderClientProps) {
   const [selectedCategory, setSelectedCategory] = useState("すべて");
@@ -128,96 +134,113 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
       : menuItems.filter((item) => item.category === selectedCategory);
 
   return (
-    <div className="flex min-h-full flex-col bg-background">
+    <div className="flex min-h-full flex-col bg-gradient-to-b from-orange-50 via-background to-background">
       {/* ヘッダー */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-14 max-w-lg items-center justify-center px-4">
-          <h1 className="text-lg font-bold tracking-tight">OSAKI 亭</h1>
+      <header className="sticky top-0 z-20 bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg">
+        <div className="mx-auto flex h-16 max-w-2xl items-center justify-center px-4">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🍔</span>
+            <h1 className="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">
+              OSAKI 亭
+            </h1>
+          </div>
         </div>
       </header>
 
       {/* ジャンルフィルター */}
-      <div className="sticky top-14 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-lg overflow-x-auto px-4 py-2">
+      <div className="sticky top-16 z-10 border-b bg-white/90 backdrop-blur-md">
+        <div className="mx-auto max-w-2xl overflow-x-auto px-4 py-3">
           <div className="flex gap-2">
             {categories.map((category) => (
-              <Button
+              <button
                 key={category}
-                variant={
-                  selectedCategory === category ? "default" : "secondary"
-                }
-                size="sm"
                 onClick={() => setSelectedCategory(category)}
-                className="shrink-0"
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                  selectedCategory === category
+                    ? "bg-orange-500 text-white shadow-md shadow-orange-200"
+                    : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                }`}
               >
+                <span>{CATEGORY_ICONS[category] ?? "🍽️"}</span>
                 {category}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
       {/* メニューエリア */}
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 py-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">
-          メニュー
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+        <div className="mb-5 flex items-baseline gap-2">
+          <h2 className="text-xl font-extrabold text-foreground">
+            Menu
+          </h2>
+          <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-sm font-semibold text-orange-600">
             {filteredItems.length}品
           </span>
-        </h2>
-        <div className="flex flex-col gap-4">
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           {filteredItems.map((item) => (
-            <Card
+            <div
               key={item.id}
-              className={!item.inStock ? "opacity-60" : ""}
+              className={`group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-lg ${
+                !item.inStock ? "opacity-60 grayscale" : ""
+              }`}
             >
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  {/* 料理画像プレースホルダー */}
-                  <div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted text-2xl">
+              {/* 画像エリア */}
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-orange-50">
+                {isImageUrl(item.imageUrl) ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-5xl">
                     {item.imageUrl}
                   </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="leading-snug">
-                        {item.name}
-                      </CardTitle>
-                      <div className="flex shrink-0 items-center gap-1">
-                        {!item.inStock && (
-                          <Badge variant="destructive" className="shrink-0">
-                            品切れ
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="shrink-0">
-                          {item.category}
-                        </Badge>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {item.description}
-                    </p>
+                )}
+                {!item.inStock && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <Badge variant="destructive" className="px-3 py-1 text-sm font-bold">
+                      SOLD OUT
+                    </Badge>
                   </div>
+                )}
+                <div className="absolute right-2 top-2">
+                  <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-orange-600 shadow-sm backdrop-blur-sm">
+                    {item.category}
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-bold">
-                  ¥{item.price.toLocaleString()}
+              </div>
+              {/* 情報エリア */}
+              <div className="p-4">
+                <h3 className="text-base font-bold leading-snug text-foreground">
+                  {item.name}
+                </h3>
+                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                  {item.description}
                 </p>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => addToCart(item)}
-                  disabled={!item.inStock}
-                >
-                  {item.inStock ? "カートに追加" : "品切れ"}
-                </Button>
-              </CardFooter>
-            </Card>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-xl font-extrabold text-orange-600">
+                    ¥{item.price.toLocaleString()}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() => addToCart(item)}
+                    disabled={!item.inStock}
+                    className="rounded-full bg-orange-500 px-5 font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg disabled:bg-gray-300"
+                  >
+                    {item.inStock ? "+ Add" : "Sold Out"}
+                  </Button>
+                </div>
+              </div>
+            </div>
           ))}
           {filteredItems.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
               該当するメニューがありません
             </p>
           )}
@@ -226,27 +249,25 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
 
       {/* 品切れエラーメッセージ */}
       {outOfStockError && (
-        <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-lg bg-destructive px-4 py-2 text-sm text-destructive-foreground shadow-lg">
+        <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-top-2 rounded-xl bg-red-500 px-5 py-3 text-sm font-medium text-white shadow-xl">
           {outOfStockError}
         </div>
       )}
 
       {/* 注文リストを見るボタン（フッター固定） */}
-      <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-lg items-center px-4 py-3">
-          <Button
-            variant="outline"
-            className="w-full"
-            size="lg"
+      <div className="sticky bottom-0 z-10 border-t bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-2xl items-center px-4 py-3">
+          <button
+            className="relative flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
             onClick={() => setShowCart(true)}
           >
-            注文リストを見る
+            🛒 注文リストを見る
             {totalQuantity > 0 && (
-              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+              <span className="absolute -right-1 -top-1 flex size-7 items-center justify-center rounded-full bg-red-500 text-sm font-bold text-white shadow-md">
                 {totalQuantity}
               </span>
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -254,103 +275,116 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
       {showCart && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowCart(false)}
           />
-          <div className="relative mx-auto w-full max-w-lg rounded-t-2xl bg-background p-4 shadow-lg">
+          <div className="relative mx-auto w-full max-w-lg animate-in slide-in-from-bottom rounded-t-3xl bg-white p-5 shadow-2xl">
+            <div className="mb-1 flex justify-center">
+              <div className="h-1.5 w-12 rounded-full bg-gray-200" />
+            </div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold">注文リスト</h2>
-              <Button
-                variant="ghost"
-                size="sm"
+              <h2 className="text-xl font-extrabold">🛒 注文リスト</h2>
+              <button
+                className="flex size-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
                 onClick={() => setShowCart(false)}
               >
                 ✕
-              </Button>
+              </button>
             </div>
 
             {cart.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                カートは空です
-              </p>
+              <div className="py-12 text-center">
+                <span className="text-4xl">🍽️</span>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  カートは空です
+                </p>
+              </div>
             ) : (
               <>
-                <div className="max-h-64 space-y-3 overflow-y-auto">
+                <div className="max-h-64 space-y-2 overflow-y-auto">
                   {cart.map((cartItem) => (
                     <div
                       key={cartItem.item.id}
-                      className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                      className="flex items-center justify-between gap-3 rounded-xl bg-orange-50 p-3"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{cartItem.item.imageUrl}</span>
+                      <div className="flex items-center gap-3">
+                        {isImageUrl(cartItem.item.imageUrl) ? (
+                          <div className="relative size-12 shrink-0 overflow-hidden rounded-lg">
+                            <Image
+                              src={cartItem.item.imageUrl}
+                              alt={cartItem.item.name}
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-2xl">{cartItem.item.imageUrl}</span>
+                        )}
                         <div>
-                          <p className="text-sm font-medium">
+                          <p className="text-sm font-bold">
                             {cartItem.item.name}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs font-semibold text-orange-600">
                             ¥{cartItem.item.price.toLocaleString()}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="size-8 p-0"
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          className="flex size-8 items-center justify-center rounded-full bg-white text-sm font-bold shadow-sm transition-colors hover:bg-gray-50"
                           onClick={() =>
                             updateQuantity(cartItem.item.id, -1)
                           }
                         >
                           −
-                        </Button>
-                        <span className="w-6 text-center text-sm font-medium">
+                        </button>
+                        <span className="w-6 text-center text-sm font-bold">
                           {cartItem.quantity}
                         </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="size-8 p-0"
+                        <button
+                          className="flex size-8 items-center justify-center rounded-full bg-white text-sm font-bold shadow-sm transition-colors hover:bg-gray-50"
                           onClick={() =>
                             updateQuantity(cartItem.item.id, 1)
                           }
                         >
                           +
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="size-8 p-0 text-destructive"
+                        </button>
+                        <button
+                          className="ml-1 flex size-8 items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           onClick={() => removeFromCart(cartItem.item.id)}
                         >
-                          🗑
-                        </Button>
+                          ✕
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 <div className="mt-4 space-y-3 border-t pt-4">
-                  <div className="flex items-center justify-between text-lg font-bold">
-                    <span>合計</span>
-                    <span>¥{totalAmount.toLocaleString()}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-bold">合計</span>
+                    <span className="text-2xl font-extrabold text-orange-600">
+                      ¥{totalAmount.toLocaleString()}
+                    </span>
                   </div>
 
                   {/* 座席番号 */}
-                  <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
-                    <span className="shrink-0 text-sm font-medium">座席番号</span>
+                  <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-3">
+                    <span className="shrink-0 text-sm font-bold">🪑 座席</span>
                     <Input
                       type="text"
                       placeholder="例: A1"
                       value={seatNumber}
                       onChange={(e) => setSeatNumber(e.target.value)}
-                      className="h-8"
+                      className="h-9 rounded-lg border-amber-200 bg-white"
                     />
                   </div>
 
                   {/* 割り勘 */}
-                  <div className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
+                  <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 p-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">割り勘</span>
+                      <span className="text-sm font-bold">👥 割り勘</span>
                       <Input
                         type="number"
                         min={1}
@@ -360,7 +394,7 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
                             Math.max(1, parseInt(e.target.value) || 1)
                           )
                         }
-                        className="h-8 w-16 text-center"
+                        className="h-9 w-16 rounded-lg border-amber-200 bg-white text-center"
                       />
                       <span className="text-sm text-muted-foreground">人</span>
                     </div>
@@ -368,21 +402,20 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
                       <p className="text-xs text-muted-foreground">
                         1人あたり
                       </p>
-                      <p className="text-base font-bold">
+                      <p className="text-lg font-extrabold text-orange-600">
                         ¥{perPersonAmount.toLocaleString()}
                       </p>
                     </div>
                   </div>
 
                   {/* 注文確定ボタン */}
-                  <Button
-                    className="w-full"
-                    size="lg"
+                  <button
+                    className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 py-4 text-lg font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none"
                     onClick={submitOrder}
                     disabled={isSubmitting || cart.length === 0}
                   >
-                    {isSubmitting ? "送信中..." : "注文を確定する"}
-                  </Button>
+                    {isSubmitting ? "送信中..." : "注文を確定する 🎉"}
+                  </button>
                 </div>
               </>
             )}
@@ -393,12 +426,13 @@ export default function OrderClient({ menuItems }: OrderClientProps) {
       {/* 注文結果メッセージ */}
       {orderResult && (
         <div
-          className={`fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow-lg ${
+          className={`fixed left-1/2 top-20 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-top-2 rounded-xl px-5 py-3 text-sm font-medium shadow-xl ${
             orderResult.type === "success"
-              ? "bg-green-600 text-white"
-              : "bg-destructive text-destructive-foreground"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
           }`}
         >
+          {orderResult.type === "success" ? "🎉 " : "⚠️ "}
           {orderResult.message}
         </div>
       )}

@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function LoginForm() {
@@ -42,20 +40,26 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-background px-4 py-12">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">管理者ログイン</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+    <div className="flex min-h-full items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <span className="text-5xl">🍔</span>
+          <h1 className="mt-3 text-2xl font-extrabold text-white">
+            OSAKI 亭
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">管理者ログイン</p>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-1" />
+          <form onSubmit={handleLogin} className="space-y-4 p-6">
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-                {error}
+              <div className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">
+                ⚠️ {error}
               </div>
             )}
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label htmlFor="email" className="text-sm font-bold text-slate-700">
                 メールアドレス
               </label>
               <Input
@@ -66,10 +70,11 @@ export default function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                className="rounded-xl border-slate-200 py-5"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="password" className="text-sm font-bold text-slate-700">
                 パスワード
               </label>
               <Input
@@ -81,14 +86,19 @@ export default function LoginForm() {
                 required
                 autoComplete="current-password"
                 minLength={8}
+                className="rounded-xl border-slate-200 py-5"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3 text-base font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:from-gray-300 disabled:to-gray-400 disabled:shadow-none"
+              disabled={isLoading}
+            >
               {isLoading ? "ログイン中..." : "ログイン"}
-            </Button>
+            </button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
