@@ -35,7 +35,12 @@ export default function OrderHistoryClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [numPeople, setNumPeople] = useState(1);
-  const [reorderingId, setReorderingId] = useState<number | null>(null);
+  const [reorderQuantities, setReorderQuantities] = useState<Record<string, number>>({});
+  const [submittingItem, setSubmittingItem] = useState<string | null>(null);
+  const [reorderResult, setReorderResult] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const fetchedSeatRef = useRef<string | null>(null);
 
@@ -78,27 +83,49 @@ export default function OrderHistoryClient() {
   const perPersonAmount =
     numPeople > 0 ? Math.ceil(grandTotal / numPeople) : grandTotal;
 
-  const handleReorder = async (order: Order) => {
-    setReorderingId(order.id);
+  const getReorderKey = (orderId: number, menuItemId: number) =>
+    `${orderId}-${menuItemId}`;
+
+  const getReorderQty = (orderId: number, menuItemId: number, defaultQty: number) => {
+    const key = getReorderKey(orderId, menuItemId);
+    return reorderQuantities[key] ?? defaultQty;
+  };
+
+  const setReorderQty = (orderId: number, menuItemId: number, qty: number) => {
+    const key = getReorderKey(orderId, menuItemId);
+    setReorderQuantities((prev) => ({ ...prev, [key]: Math.max(1, qty) }));
+  };
+
+  const handleReorderItem = async (orderId: number, item: OrderItem) => {
+    const key = getReorderKey(orderId, item.menuItemId);
+    const qty = reorderQuantities[key] ?? item.quantity;
+    setSubmittingItem(key);
+    setReorderResult(null);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: order.items.map((item) => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-          })),
+          items: [{ menuItemId: item.menuItemId, quantity: qty }],
           seatNumber,
         }),
       });
       if (res.ok) {
+        setReorderResult({
+          type: "success",
+          message: `${item.name} ×${qty} を注文しました`,
+        });
+        setTimeout(() => setReorderResult(null), 3000);
         await fetchOrders();
+      } else {
+        setReorderResult({ type: "error", message: "注文に失敗しました" });
+        setTimeout(() => setReorderResult(null), 3000);
       }
     } catch {
-      setError("再注文に失敗しました");
+      setReorderResult({ type: "error", message: "通信エラーが発生しました" });
+      setTimeout(() => setReorderResult(null), 3000);
     } finally {
-      setReorderingId(null);
+      setSubmittingItem(null);
     }
   };
 
@@ -221,38 +248,66 @@ export default function OrderHistoryClient() {
                       </span>
                     </div>
                     <div className="divide-y">
-                      {order.items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between px-4 py-2.5"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {item.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ×{item.quantity}
-                            </span>
+                      {order.items.map((item, idx) => {
+                        const key = getReorderKey(order.id, item.menuItemId);
+                        const qty = getReorderQty(order.id, item.menuItemId, item.quantity);
+                        const isSubmitting = submittingItem === key;
+                        return (
+                          <div
+                            key={idx}
+                            className="px-4 py-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">
+                                  {item.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  ×{item.quantity}
+                                </span>
+                              </div>
+                              <span className="text-sm font-semibold text-orange-600">
+                                ¥{(item.price * item.quantity).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-end gap-2">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200"
+                                  onClick={() =>
+                                    setReorderQty(order.id, item.menuItemId, qty - 1)
+                                  }
+                                >
+                                  −
+                                </button>
+                                <span className="w-6 text-center text-sm font-bold">
+                                  {qty}
+                                </span>
+                                <button
+                                  className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200"
+                                  onClick={() =>
+                                    setReorderQty(order.id, item.menuItemId, qty + 1)
+                                  }
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => handleReorderItem(order.id, item)}
+                                disabled={isSubmitting}
+                                className="rounded-full bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow-md disabled:bg-gray-300"
+                              >
+                                {isSubmitting ? "注文中..." : "🔄 おかわり"}
+                              </button>
+                            </div>
                           </div>
-                          <span className="text-sm font-semibold text-orange-600">
-                            ¥{(item.price * item.quantity).toLocaleString()}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="flex items-center justify-between border-t bg-gray-50 px-4 py-3">
                       <span className="text-base font-bold text-orange-600">
                         ¥{orderTotal.toLocaleString()}
                       </span>
-                      <button
-                        onClick={() => handleReorder(order)}
-                        disabled={reorderingId === order.id}
-                        className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg disabled:bg-gray-300"
-                      >
-                        {reorderingId === order.id
-                          ? "注文中..."
-                          : "🔄 おかわり"}
-                      </button>
                     </div>
                   </div>
                 );
@@ -316,6 +371,20 @@ export default function OrderHistoryClient() {
           </Link>
         </div>
       </footer>
+
+      {/* おかわり結果メッセージ */}
+      {reorderResult && (
+        <div
+          className={`fixed left-1/2 top-20 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-top-2 rounded-xl px-5 py-3 text-sm font-medium shadow-xl ${
+            reorderResult.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+          }`}
+        >
+          {reorderResult.type === "success" ? "🎉 " : "⚠️ "}
+          {reorderResult.message}
+        </div>
+      )}
     </div>
   );
 }
