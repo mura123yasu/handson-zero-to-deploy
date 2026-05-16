@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 type OrderItem = {
   menuItemId: number;
@@ -54,6 +55,12 @@ export default function AdminOrdersClient({
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [seatFilter, setSeatFilter] = useState("");
+  const [seatBilling, setSeatBilling] = useState<{
+    seat: string;
+    orders: Order[];
+    total: number;
+  } | null>(null);
 
   const updateStatus = async (orderId: number, newStatus: string) => {
     setUpdatingId(orderId);
@@ -101,6 +108,24 @@ export default function AdminOrdersClient({
     } catch {
       // ignore
     }
+  };
+
+  const lookupSeatBilling = () => {
+    const trimmed = seatFilter.trim();
+    if (!trimmed) {
+      setSeatBilling(null);
+      return;
+    }
+    const seatOrders = orders.filter(
+      (o) =>
+        o.seatNumber === trimmed && o.status !== "cancelled"
+    );
+    const total = seatOrders.reduce(
+      (sum, o) =>
+        sum + o.items.reduce((s, item) => s + item.price * item.quantity, 0),
+      0
+    );
+    setSeatBilling({ seat: trimmed, orders: seatOrders, total });
   };
 
   const filteredOrders =
@@ -155,6 +180,75 @@ export default function AdminOrdersClient({
       </div>
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+        {/* 座席番号で会計確認 */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">座席番号で会計確認</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="座席番号を入力（例: A1）"
+                value={seatFilter}
+                onChange={(e) => setSeatFilter(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && lookupSeatBilling()}
+                className="flex-1"
+              />
+              <Button onClick={lookupSeatBilling}>検索</Button>
+            </div>
+            {seatBilling && (
+              <div className="mt-4">
+                {seatBilling.orders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    座席「{seatBilling.seat}」の注文はありません
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      座席「{seatBilling.seat}」の注文（{seatBilling.orders.length}件）
+                    </p>
+                    {seatBilling.orders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="rounded-lg border p-3 text-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">注文 #{order.id}</span>
+                          <Badge
+                            variant={
+                              STATUS_VARIANTS[order.status] ?? "outline"
+                            }
+                          >
+                            {STATUS_LABELS[order.status] ?? order.status}
+                          </Badge>
+                        </div>
+                        {order.items.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="mt-1 flex justify-between text-muted-foreground"
+                          >
+                            <span>
+                              {item.name} x{item.quantity}
+                            </span>
+                            <span>
+                              ¥{(item.price * item.quantity).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between border-t pt-2 text-lg font-bold">
+                      <span>会計合計</span>
+                      <span>¥{seatBilling.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <p className="mb-4 text-sm text-muted-foreground">
           {filteredOrders.length}件の注文
         </p>
