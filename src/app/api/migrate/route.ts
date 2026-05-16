@@ -18,6 +18,24 @@ export async function POST() {
     `;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        seat_number TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER REFERENCES orders(id),
+        menu_item_id INTEGER REFERENCES menu_items(id),
+        quantity INTEGER NOT NULL
+      )
+    `;
+
+    await sql`
       INSERT INTO menu_items (id, name, price, category, description, image_url, in_stock) VALUES
         (1, '特製ハンバーグ定食', 1280, 'メイン', '自家製デミグラスソースの特製ハンバーグ。ライス・味噌汁付き。', '🍽️', true),
         (2, '海鮮丼', 1480, 'メイン', '新鮮な刺身をふんだんに盛り付けた海鮮丼。味噌汁付き。', '🐟', false),
